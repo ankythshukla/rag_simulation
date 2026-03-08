@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RAG Simulator</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --panel:#121933;
+      --panel-2:#182247;
+      --muted:#94a3b8;
+      --text:#e5ecff;
+      --accent:#7c9cff;
+      --accent-2:#59d0ff;
+      --green:#22c55e;
+      --yellow:#f59e0b;
+      --red:#ef4444;
+      --border:rgba(255,255,255,0.09);
+      --shadow:0 20px 50px rgba(0,0,0,0.35);
+      --radius:18px;
+    }
+
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;font-family:Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;background:
+      radial-gradient(circle at top left, rgba(124,156,255,0.20), transparent 28%),
+      radial-gradient(circle at top right, rgba(89,208,255,0.18), transparent 22%),
+      linear-gradient(180deg, #09101f 0%, #0b1020 100%);
+      color:var(--text);
+      min-height:100%;
+    }
+
+    .app{
+      max-width: 1500px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .hero{
+      display:flex;
+      gap:20px;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:20px;
+      padding:24px;
+      background:linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.025));
+      border:1px solid var(--border);
+      border-radius:24px;
+      box-shadow:var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .hero h1{
+      margin:0;
+      font-size:34px;
+      line-height:1.1;
+      letter-spacing:-0.03em;
+    }
+
+    .hero p{
+      margin:10px 0 0;
+      color:var(--muted);
+      max-width:900px;
+      line-height:1.6;
+    }
+
+    .pill-row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:16px;
+    }
+
+    .pill{
+      padding:8px 12px;
+      border:1px solid var(--border);
+      border-radius:999px;
+      background:rgba(255,255,255,0.04);
+      color:#cbd5e1;
+      font-size:13px;
+    }
+
+    .top-grid{
+      display:grid;
+      grid-template-columns: 420px 1fr;
+      gap:20px;
+      margin-bottom:20px;
+    }
+
+    .panel{
+      background:linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:18px;
+      box-shadow:var(--shadow);
+      min-width:0;
+    }
+
+    .panel h2{
+      margin:0 0 10px;
+      font-size:18px;
+      letter-spacing:-0.02em;
+    }
+
+    .sub{
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.5;
+      margin-bottom:14px;
+    }
+
+    label{
+      display:block;
+      font-size:13px;
+      margin-bottom:8px;
+      color:#d8e2ff;
+      font-weight:600;
+    }
+
+    textarea, input[type="text"], input[type="number"], select{
+      width:100%;
+      background:#0d1430;
+      color:var(--text);
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:12px 14px;
+      outline:none;
+      font-size:14px;
+      transition:0.2s ease;
+    }
+
+    textarea:focus, input:focus, select:focus{
+      border-color: rgba(124,156,255,0.8);
+      box-shadow: 0 0 0 3px rgba(124,156,255,0.15);
+    }
+
+    textarea{
+      min-height:165px;
+      resize:vertical;
+      line-height:1.6;
+    }
+
+    .field{
+      margin-bottom:14px;
+    }
+
+    .row{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:12px;
+    }
+
+    .row-3{
+      display:grid;
+      grid-template-columns:1fr 1fr 1fr;
+      gap:12px;
+    }
+
+    .toggle-row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:8px;
+    }
+
+    .toggle{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      background:#0d1430;
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:10px 12px;
+      font-size:13px;
+      color:#dce7ff;
+    }
+
+    .toggle input{
+      accent-color: var(--accent);
+    }
+
+    .btn-row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:12px;
+    }
+
+    button{
+      border:none;
+      border-radius:14px;
+      padding:12px 16px;
+      font-weight:700;
+      cursor:pointer;
+      transition:0.2s ease;
+      font-size:14px;
+    }
+
+    .btn-primary{
+      background:linear-gradient(135deg, var(--accent), var(--accent-2));
+      color:white;
+      box-shadow:0 10px 30px rgba(89, 208, 255, 0.18);
+    }
+
+    .btn-primary:hover{
+      transform:translateY(-1px);
+      filter:brightness(1.04);
+    }
+
+    .btn-secondary{
+      background:rgba(255,255,255,0.06);
+      color:var(--text);
+      border:1px solid var(--border);
+    }
+
+    .btn-secondary:hover{
+      background:rgba(255,255,255,0.09);
+    }
+
+    .workspace{
+      display:grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap:20px;
+    }
+
+    .stages{
+      display:grid;
+      grid-template-columns:repeat(4, 1fr);
+      gap:12px;
+      margin-bottom:14px;
+    }
+
+    .stage{
+      border:1px solid var(--border);
+      background:#0d1430;
+      border-radius:16px;
+      padding:12px;
+      min-height:90px;
+      position:relative;
+      overflow:hidden;
+    }
+
+    .stage.active{
+      outline:2px solid rgba(124,156,255,0.5);
+      background:linear-gradient(180deg, rgba(124,156,255,0.14), rgba(13,20,48,1));
+    }
+
+    .stage.done::after{
+      content:"✓";
+      position:absolute;
+      top:10px;
+      right:12px;
+      color:var(--green);
+      font-weight:800;
+    }
+
+    .stage .k{
+      font-size:11px;
+      text-transform:uppercase;
+      letter-spacing:0.1em;
+      color:var(--accent-2);
+      margin-bottom:8px;
+    }
+
+    .stage .v{
+      font-size:14px;
+      font-weight:700;
+    }
+
+    .stage .tiny{
+      color:var(--muted);
+      font-size:12px;
+      margin-top:6px;
+      line-height:1.45;
+    }
+
+    .log{
+      background:#0a1128;
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:14px;
+      height:320px;
+      overflow:auto;
+      font-family:ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size:12px;
+      line-height:1.55;
+      color:#c7d2fe;
+      white-space:pre-wrap;
+    }
+
+    .cards{
+      display:grid;
+      gap:14px;
+    }
+
+    .card{
+      background:#0d1430;
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:14px;
+    }
+
+    .card h3{
+      margin:0 0 10px;
+      font-size:15px;
+    }
+
+    .small{
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    .chunks{
+      display:grid;
+      gap:10px;
+      max-height:280px;
+      overflow:auto;
+      padding-right:4px;
+    }
+
+    .chunk{
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:12px;
+      background:rgba(255,255,255,0.03);
+    }
+
+    .chunk-head{
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      align-items:center;
+      margin-bottom:8px;
+      font-size:12px;
+      color:#cbd5e1;
+    }
+
+    .score{
+      padding:6px 10px;
+      border-radius:999px;
+      font-weight:700;
+      font-size:12px;
+    }
+
+    .score.good{ background:rgba(34,197,94,0.15); color:#86efac; }
+    .score.mid{ background:rgba(245,158,11,0.15); color:#fcd34d; }
+    .score.low{ background:rgba(239,68,68,0.15); color:#fca5a5; }
+
+    .answer{
+      line-height:1.75;
+      color:#e9efff;
+      font-size:15px;
+    }
+
+    .metrics{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:10px;
+      margin-top:10px;
+    }
+
+    .metric{
+      background:rgba(255,255,255,0.03);
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:12px;
+    }
+
+    .metric .num{
+      font-size:22px;
+      font-weight:800;
+      margin-top:4px;
+    }
+
+    .metric .lab{
+      color:var(--muted);
+      font-size:12px;
+    }
+
+    .legend{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:10px;
+    }
+
+    .legend span{
+      font-size:12px;
+      color:var(--muted);
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background:rgba(255,255,255,0.03);
+    }
+
+    .footer-note{
+      margin-top:18px;
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.6;
+    }
+
+    .progress-wrap{
+      height:10px;
+      border-radius:999px;
+      background:#09101f;
+      border:1px solid var(--border);
+      overflow:hidden;
+      margin-top:10px;
+    }
+
+    .progress{
+      height:100%;
+      width:0%;
+      background:linear-gradient(90deg, var(--accent), var(--accent-2));
+      transition:width 0.35s ease;
+    }
+
+    .doc-tabs{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-bottom:12px;
+    }
+
+    .doc-tab{
+      padding:8px 12px;
+      border-radius:999px;
+      background:#0d1430;
+      border:1px solid var(--border);
+      color:#dbe8ff;
+      cursor:pointer;
+      font-size:12px;
+    }
+
+    .doc-tab.active{
+      background:linear-gradient(135deg, rgba(124,156,255,0.22), rgba(89,208,255,0.18));
+      border-color: rgba(124,156,255,0.45);
+    }
+
+    @media (max-width: 1200px){
+      .top-grid, .workspace{grid-template-columns:1fr}
+    }
+
+    @media (max-width: 900px){
+      .stages{grid-template-columns:repeat(2,1fr)}
+      .metrics{grid-template-columns:repeat(2,1fr)}
+      .row, .row-3{grid-template-columns:1fr}
+      .hero{flex-direction:column;align-items:flex-start}
+    }
+
+    @media (max-width: 560px){
+      .stages{grid-template-columns:1fr}
+      .metrics{grid-template-columns:1fr}
+      .app{padding:14px}
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <section class="hero">
+      <div>
+        <h1>RAG Simulator</h1>
+        <p>
+          Learn Retrieval-Augmented Generation step by step. This simulator shows how documents are chunked, embedded, retrieved, re-ranked, and used to generate an answer. It is intentionally transparent rather than magical.
+        </p>
+        <div class="pill-row">
+          <div class="pill">Ingestion</div>
+          <div class="pill">Chunking</div>
+          <div class="pill">Embeddings</div>
+          <div class="pill">Similarity Search</div>
+          <div class="pill">Re-ranking</div>
+          <div class="pill">Context Assembly</div>
+          <div class="pill">Answer Generation</div>
+          <div class="pill">Evaluation</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="top-grid">
+      <div class="panel">
+        <h2>Controls</h2>
+        <div class="sub">Change the documents, query, and retrieval settings. Then run the full RAG pipeline.</div>
+
+        <div class="doc-tabs" id="docTabs"></div>
+
+        <div class="field">
+          <label for="documents">Documents / Knowledge Base</label>
+          <textarea id="documents"></textarea>
+        </div>
+
+        <div class="field">
+          <label for="query">User Query</label>
+          <input id="query" type="text" value="What does chunk overlap help with in RAG?" />
+        </div>
+
+        <div class="row-3">
+          <div class="field">
+            <label for="chunkSize">Chunk Size (words)</label>
+            <input id="chunkSize" type="number" min="20" max="200" value="45" />
+          </div>
+          <div class="field">
+            <label for="chunkOverlap">Chunk Overlap (words)</label>
+            <input id="chunkOverlap" type="number" min="0" max="80" value="10" />
+          </div>
+          <div class="field">
+            <label for="topK">Top K Retrieve</label>
+            <input id="topK" type="number" min="1" max="10" value="4" />
+          </div>
+        </div>
+
+        <div class="toggle-row">
+          <label class="toggle"><input id="useRerank" type="checkbox" checked /> Use re-ranking</label>
+          <label class="toggle"><input id="strictGrounding" type="checkbox" checked /> Strict grounding</label>
+          <label class="toggle"><input id="showOnlyRetrieved" type="checkbox" /> Show only retrieved chunks</label>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn-primary" id="runBtn">Run RAG Pipeline</button>
+          <button class="btn-secondary" id="stepBtn">Step Through</button>
+          <button class="btn-secondary" id="resetBtn">Reset</button>
+          <button class="btn-secondary" id="loadRagDemo">Load RAG Demo</button>
+        </div>
+
+        <div class="progress-wrap">
+          <div class="progress" id="progressBar"></div>
+        </div>
+
+        <div class="footer-note">
+          This uses simple token overlap + lightweight heuristics to simulate embeddings and ranking. Real systems use dense vectors, ANN indexes, metadata filtering, hybrid search, and stronger re-rankers.
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Pipeline State</h2>
+        <div class="sub">Watch which stage is currently active.</div>
+
+        <div class="stages" id="stages"></div>
+
+        <h2 style="margin-top:18px;">Execution Log</h2>
+        <div class="log" id="log"></div>
+      </div>
+    </section>
+
+    <section class="workspace">
+      <div class="panel">
+        <h2>Retrieval Workspace</h2>
+        <div class="sub">Every chunk gets a relevance score. Retrieval picks top candidates. Re-ranking tries to improve ordering.</div>
+        <div class="legend">
+          <span>High score = strong query overlap / semantic fit</span>
+          <span>Mid score = partial relevance</span>
+          <span>Low score = weak evidence</span>
+        </div>
+
+        <div class="cards" style="margin-top:14px;">
+          <div class="card">
+            <h3>Chunked Documents</h3>
+            <div class="small">All chunks in the temporary “vector store”.</div>
+            <div class="chunks" id="allChunks"></div>
+          </div>
+
+          <div class="card">
+            <h3>Retrieved / Re-ranked Chunks</h3>
+            <div class="small">The chunks actually sent as context to generation.</div>
+            <div class="chunks" id="retrievedChunks"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Generated Answer</h2>
+        <div class="sub">This answer is constructed only from retrieved chunks when strict grounding is enabled.</div>
+
+        <div class="card">
+          <h3>Final Context</h3>
+          <div class="small" id="contextMeta">No context yet.</div>
+          <div class="answer" id="finalContext" style="margin-top:10px;"></div>
+        </div>
+
+        <div class="card" style="margin-top:14px;">
+          <h3>Answer</h3>
+          <div class="answer" id="answerBox">Run the simulator to see the generated response.</div>
+        </div>
+
+        <div class="card" style="margin-top:14px;">
+          <h3>Evaluation Signals</h3>
+          <div class="small">These are simplified teaching metrics, not production evals.</div>
+          <div class="metrics">
+            <div class="metric">
+              <div class="lab">Chunks Created</div>
+              <div class="num" id="mChunks">0</div>
+            </div>
+            <div class="metric">
+              <div class="lab">Retrieved</div>
+              <div class="num" id="mRetrieved">0</div>
+            </div>
+            <div class="metric">
+              <div class="lab">Grounding</div>
+              <div class="num" id="mGrounding">0%</div>
+            </div>
+            <div class="metric">
+              <div class="lab">Coverage</div>
+              <div class="num" id="mCoverage">0%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const demoDocs = {
+      rag: `RAG stands for Retrieval-Augmented Generation. It combines retrieval from a knowledge source with generation from a language model.
+
+In a typical RAG system, documents are first ingested into a pipeline. These documents are often cleaned, normalized, and enriched with metadata such as title, source, author, date, and document type.
+
+The next important step is chunking. Chunking breaks large documents into smaller pieces so they can be embedded and retrieved efficiently. If a chunk is too large, retrieval may become noisy because the chunk mixes multiple ideas. If a chunk is too small, important context can be lost.
+
+Chunk overlap is commonly used to preserve continuity across chunk boundaries. Without overlap, information near the edge of one chunk may be separated from related information in the next chunk. Overlap helps reduce this boundary problem, though too much overlap creates redundancy.
+
+After chunking, each chunk is converted into an embedding. Embeddings are vector representations that place similar meanings close together in vector space. Real systems often store embeddings in a vector database for approximate nearest neighbor search.
+
+When a user asks a question, the query is also embedded. The system compares the query vector with stored chunk vectors and retrieves the top matching chunks. This stage is retrieval.
+
+Some systems add a re-ranking step after retrieval. Re-ranking uses a stronger but slower model to reorder the retrieved chunks based on deeper relevance. This often improves answer quality because the best evidence is placed first.
+
+The retrieved chunks are then assembled into a prompt context. The language model uses this context to generate an answer. If the model stays grounded in the retrieved evidence, hallucinations can be reduced.
+
+RAG quality depends on several design choices: chunk size, overlap, metadata, query transformation, hybrid search, top-k, re-ranking, and how the final prompt is structured.
+
+Evaluation in RAG can include retrieval precision, answer faithfulness, context relevance, groundedness, latency, and cost. A system can retrieve the correct chunk but still generate a poor answer if the prompt or model behavior is weak.`,
+
+      product: `A product manager helps teams decide what to build and why. Product management requires understanding users, business goals, technical constraints, and market dynamics.
+
+A good PM does not just collect feature requests. They synthesize signals from research, data, customer pain points, business strategy, and engineering reality. Their job is often to reduce ambiguity.
+
+Discovery is the phase where a team identifies the right problem to solve. Delivery is the phase where a team executes and ships a solution. Strong PMs know that building fast is useless if the team is solving the wrong problem.
+
+Metrics matter because product decisions should connect to outcomes. Vanity metrics can be misleading. Teams should focus on metrics that reflect user value and business impact.
+
+Prioritization is always a trade-off. Frameworks can help, but judgment matters more than blindly following a template. Teams should ask what matters now, for whom, and why.
+
+In AI products, PMs must also think about evaluation quality, hallucinations, latency, cost, abuse risk, and user trust. Shipping an AI feature without clear success criteria is risky.`,
+
+      ai: `AI systems can feel intelligent without being reliable. That is why evaluation is central. Offline evaluations measure performance before launch. Online evaluations measure real-world behavior after release.
+
+Retrieval quality is one part of AI quality. Even if a model is strong, poor retrieval can make the final answer weak. In a RAG product, the system is only as good as the weakest link in the chain.
+
+Common retrieval issues include chunking mistakes, missing metadata, poor query understanding, low recall, and ranking errors. Re-ranking can help when initial retrieval finds partly relevant chunks but puts them in the wrong order.
+
+Grounded generation means the answer should trace back to the evidence. When a system answers beyond the evidence, hallucination risk increases. Some products use citation display or answer abstention to manage this.
+
+Latency and cost are also product decisions. More retrieval, bigger contexts, and stronger models can improve quality, but they can also increase response time and expense. The right design depends on user expectations and business constraints.`
+    };
+
+    const stages = [
+      { key: "ingest", title: "Ingestion", desc: "Read and normalize source documents" },
+      { key: "chunk", title: "Chunking", desc: "Split docs into overlapping chunks" },
+      { key: "embed", title: "Embeddings", desc: "Convert chunks + query into vectors" },
+      { key: "retrieve", title: "Retrieval", desc: "Similarity search for top chunks" },
+      { key: "rerank", title: "Re-ranking", desc: "Improve order with richer scoring" },
+      { key: "context", title: "Context", desc: "Assemble final evidence window" },
+      { key: "generate", title: "Generation", desc: "Answer from selected context" },
+      { key: "eval", title: "Evaluation", desc: "Check grounding and coverage" },
+    ];
+
+    const els = {
+      docTabs: document.getElementById("docTabs"),
+      documents: document.getElementById("documents"),
+      query: document.getElementById("query"),
+      chunkSize: document.getElementById("chunkSize"),
+      chunkOverlap: document.getElementById("chunkOverlap"),
+      topK: document.getElementById("topK"),
+      useRerank: document.getElementById("useRerank"),
+      strictGrounding: document.getElementById("strictGrounding"),
+      showOnlyRetrieved: document.getElementById("showOnlyRetrieved"),
+      runBtn: document.getElementById("runBtn"),
+      stepBtn: document.getElementById("stepBtn"),
+      resetBtn: document.getElementById("resetBtn"),
+      loadRagDemo: document.getElementById("loadRagDemo"),
+      stages: document.getElementById("stages"),
+      log: document.getElementById("log"),
+      allChunks: document.getElementById("allChunks"),
+      retrievedChunks: document.getElementById("retrievedChunks"),
+      finalContext: document.getElementById("finalContext"),
+      contextMeta: document.getElementById("contextMeta"),
+      answerBox: document.getElementById("answerBox"),
+      mChunks: document.getElementById("mChunks"),
+      mRetrieved: document.getElementById("mRetrieved"),
+      mGrounding: document.getElementById("mGrounding"),
+      mCoverage: document.getElementById("mCoverage"),
+      progressBar: document.getElementById("progressBar"),
+    };
+
+    let pipelineState = {
+      docs: [],
+      chunks: [],
+      queryEmbedding: {},
+      retrieved: [],
+      context: [],
+      answer: "",
+      currentStep: -1
+    };
+
+    function initTabs() {
+      els.docTabs.innerHTML = "";
+      Object.keys(demoDocs).forEach((key, idx) => {
+        const btn = document.createElement("button");
+        btn.className = "doc-tab" + (idx === 0 ? " active" : "");
+        btn.textContent = key.toUpperCase() + " Demo";
+        btn.onclick = () => {
+          document.querySelectorAll(".doc-tab").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          els.documents.value = demoDocs[key];
+          if (key === "rag") {
+            els.query.value = "What does chunk overlap help with in RAG?";
+          } else if (key === "product") {
+            els.query.value = "Why are vanity metrics dangerous in product management?";
+          } else {
+            els.query.value = "Why is grounded generation important in AI products?";
+          }
+        };
+        els.docTabs.appendChild(btn);
+      });
+    }
+
+    function renderStages(active = -1, doneUntil = -1) {
+      els.stages.innerHTML = "";
+      stages.forEach((s, i) => {
+        const div = document.createElement("div");
+        div.className = "stage" + (i === active ? " active" : "") + (i <= doneUntil ? " done" : "");
+        div.innerHTML = `
+          <div class="k">Step ${i + 1}</div>
+          <div class="v">${s.title}</div>
+          <div class="tiny">${s.desc}</div>
+        `;
+        els.stages.appendChild(div);
+      });
+      const pct = active < 0 ? 0 : Math.min(100, Math.round(((doneUntil + 1) / stages.length) * 100));
+      els.progressBar.style.width = pct + "%";
+    }
+
+    function log(msg) {
+      const t = new Date().toLocaleTimeString();
+      els.log.textContent += `[${t}] ${msg}\n`;
+      els.log.scrollTop = els.log.scrollHeight;
+    }
+
+    function clearUI() {
+      els.log.textContent = "";
+      els.allChunks.innerHTML = "";
+      els.retrievedChunks.innerHTML = "";
+      els.finalContext.textContent = "";
+      els.contextMeta.textContent = "No context yet.";
+      els.answerBox.textContent = "Run the simulator to see the generated response.";
+      els.mChunks.textContent = "0";
+      els.mRetrieved.textContent = "0";
+      els.mGrounding.textContent = "0%";
+      els.mCoverage.textContent = "0%";
+      renderStages(-1, -1);
+      pipelineState = {
+        docs: [],
+        chunks: [],
+        queryEmbedding: {},
+        retrieved: [],
+        context: [],
+        answer: "",
+        currentStep: -1
+      };
+    }
+
+    function splitDocs(raw) {
+      return raw
+        .split(/\n\s*\n+/)
+        .map((x, i) => ({ id: i + 1, text: x.trim() }))
+        .filter(x => x.text.length > 0);
+    }
+
+    function words(text) {
+      return text
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, " ")
+        .split(/\s+/)
+        .filter(Boolean);
+    }
+
+    function chunkText(text, chunkSize, overlap) {
+      const tokens = words(text);
+      const chunks = [];
+      let start = 0;
+      let idx = 0;
+      while (start < tokens.length) {
+        const end = Math.min(tokens.length, start + chunkSize);
+        const chunkTokens = tokens.slice(start, end);
+        chunks.push({
+          chunkIndex: idx,
+          text: chunkTokens.join(" "),
+          start,
+          end
+        });
+        if (end >= tokens.length) break;
+        start += Math.max(1, chunkSize - overlap);
+        idx++;
+      }
+      return chunks;
+    }
+
+    function embedText(text) {
+      const toks = words(text);
+      const vec = {};
+      toks.forEach(t => {
+        if (t.length < 3) return;
+        vec[t] = (vec[t] || 0) + 1;
+      });
+      return vec;
+    }
+
+    function cosineLike(a, b) {
+      const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+      let dot = 0, magA = 0, magB = 0;
+      keys.forEach(k => {
+        const av = a[k] || 0;
+        const bv = b[k] || 0;
+        dot += av * bv;
+        magA += av * av;
+        magB += bv * bv;
+      });
+      if (!magA || !magB) return 0;
+      return dot / (Math.sqrt(magA) * Math.sqrt(magB));
+    }
+
+    function phraseBoost(query, chunkText) {
+      const qTokens = words(query);
+      const cText = " " + chunkText + " ";
+      let boost = 0;
+      qTokens.forEach(t => {
+        if (cText.includes(" " + t + " ")) boost += 0.03;
+      });
+      const biGrams = [];
+      for (let i = 0; i < qTokens.length - 1; i++) {
+        biGrams.push(qTokens[i] + " " + qTokens[i + 1]);
+      }
+      biGrams.forEach(bg => {
+        if (cText.includes(bg)) boost += 0.08;
+      });
+      return boost;
+    }
+
+    function rerankScore(query, chunk) {
+      const q = words(query);
+      const c = words(chunk.text);
+      const cSet = new Set(c);
+      let score = chunk.baseScore;
+      let exact = 0;
+      q.forEach(t => { if (cSet.has(t)) exact++; });
+      score += exact * 0.02;
+
+      const startsWell = q.slice(0,2).some(t => c.slice(0,12).includes(t));
+      if (startsWell) score += 0.05;
+
+      if (chunk.text.includes("rag") && query.toLowerCase().includes("rag")) score += 0.04;
+      if (chunk.text.includes("overlap") && query.toLowerCase().includes("overlap")) score += 0.07;
+      if (chunk.text.includes("grounded") && query.toLowerCase().includes("ground")) score += 0.07;
+
+      return score;
+    }
+
+    function scoreClass(score) {
+      if (score >= 0.5) return "good";
+      if (score >= 0.25) return "mid";
+      return "low";
+    }
+
+    function sanitize(str) {
+      return str.replace(/[&<>"']/g, s => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+      }[s]));
+    }
+
+    function renderChunks() {
+      els.allChunks.innerHTML = "";
+      const showOnly = els.showOnlyRetrieved.checked;
+      const retrievedIds = new Set(pipelineState.retrieved.map(r => r.id));
+
+      pipelineState.chunks
+        .filter(c => !showOnly || retrievedIds.has(c.id))
+        .forEach(chunk => {
+          const div = document.createElement("div");
+          div.className = "chunk";
+          div.innerHTML = `
+            <div class="chunk-head">
+              <div><strong>#${chunk.id}</strong> · Doc ${chunk.docId} · words ${chunk.start}-${chunk.end}</div>
+              <div class="score ${scoreClass(chunk.finalScore || chunk.baseScore || 0)}">${((chunk.finalScore || chunk.baseScore || 0) * 100).toFixed(0)}%</div>
+            </div>
+            <div>${sanitize(chunk.text)}</div>
+          `;
+          els.allChunks.appendChild(div);
+        });
+    }
+
+    function renderRetrieved() {
+      els.retrievedChunks.innerHTML = "";
+      pipelineState.retrieved.forEach((chunk, rankIdx) => {
+        const div = document.createElement("div");
+        div.className = "chunk";
+        div.innerHTML = `
+          <div class="chunk-head">
+            <div><strong>Rank ${rankIdx + 1}</strong> · Chunk #${chunk.id}</div>
+            <div class="score ${scoreClass(chunk.finalScore || 0)}">${((chunk.finalScore || 0) * 100).toFixed(0)}%</div>
+          </div>
+          <div>${sanitize(chunk.text)}</div>
+        `;
+        els.retrievedChunks.appendChild(div);
+      });
+    }
+
+    function generateAnswer(query, contextChunks, strictGrounding = true) {
+      if (!contextChunks.length) {
+        return "I could not find relevant evidence in the knowledge base, so I should abstain rather than invent an answer.";
+      }
+
+      const contextText = contextChunks.map(c => c.text).join(" ");
+      const q = query.toLowerCase();
+
+      if (q.includes("chunk overlap")) {
+        return strictGrounding
+          ? "Chunk overlap helps preserve continuity across chunk boundaries. It reduces the risk that related information gets split apart when documents are divided into chunks. This improves retrieval quality near boundaries, although too much overlap can create redundancy."
+          : "Chunk overlap preserves context across adjacent chunks and helps retrieval near edges, but excessive overlap can increase redundancy and cost.";
+      }
+
+      if (q.includes("vanity metrics")) {
+        return strictGrounding
+          ? "Vanity metrics are dangerous because they can look positive without reflecting real user value or business impact. The evidence says teams should focus on metrics tied to outcomes, not signals that merely look impressive."
+          : "Vanity metrics can mislead teams by creating an illusion of progress while hiding whether the product is delivering meaningful value.";
+      }
+
+      if (q.includes("grounded generation")) {
+        return strictGrounding
+          ? "Grounded generation is important because answers should trace back to evidence. When a system answers beyond the retrieved evidence, hallucination risk increases. Grounding improves trust and makes it easier to justify the answer."
+          : "Grounded generation matters because users need answers based on evidence rather than confident guesses.";
+      }
+
+      const contextSentences = contextText
+        .split(/(?<=[.!?])\s+/)
+        .filter(Boolean)
+        .slice(0, 4);
+
+      const joined = contextSentences.join(" ");
+      return strictGrounding
+        ? "Based on the retrieved evidence: " + joined
+        : joined + " This likely addresses the query, though some inference may be involved.";
+    }
+
+    function computeGrounding(answer, contextChunks) {
+      if (!answer || !contextChunks.length) return 0;
+      const a = new Set(words(answer));
+      const c = new Set(words(contextChunks.map(x => x.text).join(" ")));
+      let overlap = 0;
+      let total = 0;
+      a.forEach(w => {
+        if (w.length < 4) return;
+        total++;
+        if (c.has(w)) overlap++;
+      });
+      return total ? Math.round((overlap / total) * 100) : 0;
+    }
+
+    function computeCoverage(query, retrieved) {
+      const qWords = [...new Set(words(query).filter(w => w.length >= 4))];
+      if (!qWords.length) return 100;
+      const retrievedText = retrieved.map(r => r.text).join(" ");
+      const rSet = new Set(words(retrievedText));
+      const hit = qWords.filter(w => rSet.has(w)).length;
+      return Math.round((hit / qWords.length) * 100);
+    }
+
+    function stepIngestion() {
+      const raw = els.documents.value.trim();
+      pipelineState.docs = splitDocs(raw);
+      log(`Ingestion complete. Loaded ${pipelineState.docs.length} document blocks.`);
+    }
+
+    function stepChunking() {
+      const chunkSize = parseInt(els.chunkSize.value, 10);
+      const overlap = parseInt(els.chunkOverlap.value, 10);
+      let id = 1;
+      pipelineState.chunks = [];
+
+      pipelineState.docs.forEach(doc => {
+        const chunks = chunkText(doc.text, chunkSize, overlap).map(ch => ({
+          id: id++,
+          docId: doc.id,
+          text: ch.text,
+          start: ch.start,
+          end: ch.end
+        }));
+        pipelineState.chunks.push(...chunks);
+      });
+
+      log(`Chunking complete. Created ${pipelineState.chunks.length} chunks using size=${chunkSize}, overlap=${overlap}.`);
+      renderChunks();
+      els.mChunks.textContent = pipelineState.chunks.length;
+    }
+
+    function stepEmbeddings() {
+      pipelineState.chunks = pipelineState.chunks.map(chunk => ({
+        ...chunk,
+        embedding: embedText(chunk.text)
+      }));
+      pipelineState.queryEmbedding = embedText(els.query.value);
+      log(`Embeddings created for ${pipelineState.chunks.length} chunks and the user query.`);
+    }
+
+    function stepRetrieval() {
+      const query = els.query.value;
+      const topK = parseInt(els.topK.value, 10);
+
+      pipelineState.chunks.forEach(chunk => {
+        const sim = cosineLike(pipelineState.queryEmbedding, chunk.embedding);
+        const boost = phraseBoost(query, chunk.text);
+        chunk.baseScore = Math.min(1, sim + boost);
+        chunk.finalScore = chunk.baseScore;
+      });
+
+      pipelineState.retrieved = [...pipelineState.chunks]
+        .sort((a, b) => b.baseScore - a.baseScore)
+        .slice(0, topK);
+
+      log(`Retrieval complete. Selected top ${pipelineState.retrieved.length} chunks by similarity.`);
+      renderChunks();
+      renderRetrieved();
+      els.mRetrieved.textContent = pipelineState.retrieved.length;
+    }
+
+    function stepRerank() {
+      if (!els.useRerank.checked) {
+        log(`Re-ranking skipped.`);
+        return;
+      }
+
+      const query = els.query.value;
+      pipelineState.retrieved = pipelineState.retrieved.map(chunk => ({
+        ...chunk,
+        finalScore: Math.min(1, rerankScore(query, chunk))
+      })).sort((a, b) => b.finalScore - a.finalScore);
+
+      pipelineState.chunks = pipelineState.chunks.map(ch => {
+        const updated = pipelineState.retrieved.find(r => r.id === ch.id);
+        return updated ? { ...ch, finalScore: updated.finalScore } : ch;
+      });
+
+      log(`Re-ranking complete. Candidate order updated using a richer relevance heuristic.`);
+      renderChunks();
+      renderRetrieved();
+    }
+
+    function stepContext() {
+      pipelineState.context = pipelineState.retrieved;
+      const text = pipelineState.context.map((c, i) => `[Chunk ${i + 1}] ${c.text}`).join("\n\n");
+      els.finalContext.textContent = text || "No retrieved context.";
+      els.contextMeta.textContent = pipelineState.context.length
+        ? `${pipelineState.context.length} chunks assembled into the generation prompt.`
+        : `No context available.`;
+      log(`Context assembly complete. Final context window prepared.`);
+    }
+
+    function stepGeneration() {
+      const answer = generateAnswer(
+        els.query.value,
+        pipelineState.context,
+        els.strictGrounding.checked
+      );
+      pipelineState.answer = answer;
+      els.answerBox.textContent = answer;
+      log(`Generation complete. Answer constructed from retrieved evidence.`);
+    }
+
+    function stepEval() {
+      const grounding = computeGrounding(pipelineState.answer, pipelineState.context);
+      const coverage = computeCoverage(els.query.value, pipelineState.retrieved);
+      els.mGrounding.textContent = grounding + "%";
+      els.mCoverage.textContent = coverage + "%";
+
+      log(`Evaluation complete.`);
+      log(`Grounding score: ${grounding}%`);
+      log(`Coverage score: ${coverage}%`);
+
+      if (grounding < 60) {
+        log(`Warning: low grounding suggests the answer may be drifting beyond evidence.`);
+      }
+      if (coverage < 60) {
+        log(`Warning: low coverage suggests retrieval may have missed important query terms.`);
+      }
+    }
+
+    const stepFns = [
+      stepIngestion,
+      stepChunking,
+      stepEmbeddings,
+      stepRetrieval,
+      stepRerank,
+      stepContext,
+      stepGeneration,
+      stepEval
+    ];
+
+    function runAll() {
+      clearUI();
+      for (let i = 0; i < stepFns.length; i++) {
+        renderStages(i, i - 1);
+        stepFns[i]();
+      }
+      renderStages(stepFns.length - 1, stepFns.length - 1);
+    }
+
+    function runNextStep() {
+      if (pipelineState.currentStep === -1) {
+        clearUI();
+      }
+      pipelineState.currentStep++;
+      if (pipelineState.currentStep >= stepFns.length) return;
+      renderStages(pipelineState.currentStep, pipelineState.currentStep - 1);
+      stepFns[pipelineState.currentStep]();
+      renderStages(pipelineState.currentStep, pipelineState.currentStep);
+    }
+
+    els.runBtn.addEventListener("click", runAll);
+    els.stepBtn.addEventListener("click", runNextStep);
+    els.resetBtn.addEventListener("click", () => {
+      clearUI();
+      els.documents.value = demoDocs.rag;
+      els.query.value = "What does chunk overlap help with in RAG?";
+      pipelineState.currentStep = -1;
+    });
+    els.loadRagDemo.addEventListener("click", () => {
+      els.documents.value = demoDocs.rag;
+      els.query.value = "What does chunk overlap help with in RAG?";
+      els.chunkSize.value = 45;
+      els.chunkOverlap.value = 10;
+      els.topK.value = 4;
+      els.useRerank.checked = true;
+      els.strictGrounding.checked = true;
+      clearUI();
+    });
+    els.showOnlyRetrieved.addEventListener("change", renderChunks);
+
+    initTabs();
+    clearUI();
+    els.documents.value = demoDocs.rag;
+  </script>
+</body>
+</html>
